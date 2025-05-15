@@ -1,13 +1,42 @@
-import { redirect } from "next/navigation";
+'use client';
 
-import { getCurrentUser } from "@/lib/firebase/firebase-admin";
-import PageContent from "../_components/PageContent";
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import ChatSidebar from '../_components/ChatSidebar';
+import ChatWindow from '../_components/ChatWindow';
 
-export default async function DashboardPage() {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) redirect("/sign-in");
+export default function Dashboard() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to the first chat or create a new one
+    const redirectToFirstChat = async () => {
+      const response = await fetch('/api/chats');
+      const data = await response.json();
+      
+      if (data.chats && data.chats.length > 0) {
+        router.push(`/dashboard/${data.chats[0].id}`);
+      } else {
+        // Create a new chat and redirect to it
+        const newChatResponse = await fetch('/api/chats', {
+          method: 'POST',
+        });
+        const newChat = await newChatResponse.json();
+        router.push(`/dashboard/${newChat.id}`);
+      }
+    };
+
+    redirectToFirstChat();
+  }, [router]);
 
   return (
-      <PageContent variant="dashboard" currentUser={currentUser.toJSON() as typeof currentUser} />
+    <div className="flex h-screen">
+      <ChatSidebar />
+      <div className="flex-1">
+        <div className="h-full flex items-center justify-center text-gray-500">
+          Select a chat or create a new one
+        </div>
+      </div>
+    </div>
   );
 }
